@@ -1,0 +1,18 @@
+[package]
+name = "h_os"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# NOTICE: CAN NOT use the lates bootloader dependency, will incur COMPILATION ERROR
+# bootloader = "0.11.3"
+bootloader = "0.9.23"
+
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
