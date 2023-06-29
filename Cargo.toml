@@ -9,6 +9,9 @@ edition = "2021"
 # NOTICE: CAN NOT use the lates bootloader dependency, will incur COMPILATION ERROR
 # bootloader = "0.11.3"
 bootloader = "0.9.23"
+# can not use volatile varsion later than 0.3.0
+# volatile = "0.5.1"
+volatile = "0.3.0"
 
 
 [profile.dev]
