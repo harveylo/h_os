@@ -1,6 +1,8 @@
 use volatile::Volatile;
 use core::fmt;
 use core::fmt::Write;
+use lazy_static::lazy_static;
+use spin::Mutex;
 
 // Rust compiler will warn each unused variable, add this attribute to avoid such warnings
 #[allow(dead_code)]
@@ -67,6 +69,7 @@ pub struct Writer {
     buffer: &'static mut Buffer,
 }
 
+#[allow(dead_code)]
 impl Writer{
     pub fn write_byte(&mut self, byte: u8){
         match byte {
@@ -93,7 +96,7 @@ impl Writer{
     fn new_line(&mut self) {
         // BUFFER_HEIGHT not included
         for row in 1..BUFFER_HEIGHT{
-            for col in 1..BUFFER_WIDTH{
+            for col in 0..BUFFER_WIDTH{
                 let character = self.buffer.chars[row][col].read();
                 self.buffer.chars[row - 1][col] .write(character);
             }
@@ -105,7 +108,7 @@ impl Writer{
     
     fn clear_row(&mut self, row: usize){
         for col in 0..BUFFER_WIDTH {
-            self.buffer.chars[row][col].write(ScreenChar { ascii_character: (0xff), color_code: (self.color_code) });
+            self.buffer.chars[row][col].write(ScreenChar { ascii_character: (0x20), color_code: (self.color_code) });
         }
     }
 
@@ -139,22 +142,51 @@ impl fmt::Write for Writer {
     }
 }
 
-pub fn print_something(){
-    let mut writer = Writer{
+// Static variable is initialized during compilation time(Constant Evaluation), while normal variable and function are evaluated at runtime
+// Use lazy intialization to solve this problem
+lazy_static! {
+    // Add ref key word to make 'match' pattern use reference, not move syntax
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
-        color_code: ColorCode::new(Color::Blue, Color::Black),
-        // First, convert 0xb8000 as a raw pointer of Buffer pointing to address 0xb8000,
-        // then dereference this raw pointer, pass it as a muttable reference to buffer
-        buffer: unsafe {&mut *(0xb8000 as *mut Buffer)},
-    };
+        color_code: ColorCode::new(Color::LightGray, Color::Black),
+        buffer: unsafe{ &mut *(0xb8000 as *mut Buffer)},
+    });
+}
 
-    writer.write_byte(b'H');
-    writer.write_string("ello, ");
-    writer.write_string("rust os World!");
-    writer.write_heart();
-    writer.write_hollow_smiling();
-    writer.write_opaque_smiling();
-    // The return value of write! must be used
-    // Therefore, call the unwrap function, this function will panic when error ocurrs
-    write!(writer, "The numbers are {} and {}",42, 1.0/3.0).unwrap();
+// This annotation tells the compiler, if the crate the includes this macro is used,
+// then this macro can be used
+// Move this macro to root namespace of this crate, whitch means we can not import this macro by 'use crate::vga::print'
+// instead, the 'use crate::print'
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => {
+        ($crate::vga_buffer::_print(format_args!($($arg)*)))
+    };
+}
+
+#[macro_export]
+macro_rules! println {
+    () => {
+        $crate::print!("\n");
+    };
+    ($($arg:tt)*) => {
+        $crate::print!("{}\n",format_args!($($arg)*));
+    }
+}
+pub fn print_heart() {
+    WRITER.lock().write_heart();
+}
+pub fn print_hollow_smile(){
+    WRITER.lock().write_hollow_smiling();
+}
+pub fn print_opaque_smile() {
+    WRITER.lock().write_opaque_smiling();
+}
+
+// macro is impelemented by expansion during the compilation time
+// so to make print, println macro available outside this module(file), the dependent function _print should also be public
+// but this is a private implementation detail, use the following attribute to avoid documentation generation
+#[doc(hidden)]
+pub fn _print(args: fmt::Arguments){
+    WRITER.lock().write_fmt(args).unwrap();
 }
