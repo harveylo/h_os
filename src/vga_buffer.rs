@@ -170,17 +170,28 @@ macro_rules! println {
         $crate::print!("\n");
     };
     ($($arg:tt)*) => {
-        $crate::print!("{}\n",format_args!($($arg)*));
+        $crate::print!("{}\n",format_args!($($arg)*))
     }
 }
+#[allow(dead_code)]
 pub fn print_heart() {
     WRITER.lock().write_heart();
 }
+#[allow(dead_code)]
 pub fn print_hollow_smile(){
     WRITER.lock().write_hollow_smiling();
 }
+#[allow(dead_code)]
 pub fn print_opaque_smile() {
     WRITER.lock().write_opaque_smiling();
+}
+#[allow(dead_code)]
+pub fn print_resotre_default_color(){
+    WRITER.lock().color_code = ColorCode::new(Color::LightGray, Color::Black);
+}
+#[allow(dead_code)]
+pub fn print_set_color(fg : Color, bg: Color){
+    WRITER.lock().color_code = ColorCode::new(fg, bg);
 }
 
 // macro is impelemented by expansion during the compilation time
