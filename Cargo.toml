@@ -6,7 +6,12 @@ edition = "2021"
 [package.metadata.bootimage]
 # bootimage will add this argument to bootimage runner
 # will be ignored under cargo run command
-test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04"]
+test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
+            "-serial","stdio",
+            "-display", "none",
+            ]
+#add timeout limits for each test to avoid infinite loop
+test-timeout = 300 # in seconds
 # config the bootimage success exit code
 test-success-exit-code = 33 #(0x10 << 1) | 1
 
