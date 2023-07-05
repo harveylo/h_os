@@ -201,3 +201,29 @@ pub fn print_set_color(fg : Color, bg: Color){
 pub fn _print(args: fmt::Arguments){
     WRITER.lock().write_fmt(args).unwrap();
 }
+
+
+
+
+#[test_case]
+fn test_println_simple(){
+    print!("test_println_simple output");
+}
+
+#[test_case]
+fn test_println_int() {
+    for i in 0..=200 {
+        println!("test_println_int: {i}");
+    }
+}
+#[test_case]
+fn test_println_char_str(){
+    let s = "Hello, RUST os World!";
+    println!("{s}");
+    for (i,c) in s.chars().enumerate() {
+        // get the ith character of the line that just outputed to the screen(VGA buffer)
+        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT-2][i].read();
+        // compare those characters
+        assert_eq!(char::from(screen_char.ascii_character),c);
+    }
+}

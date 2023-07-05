@@ -8,6 +8,7 @@ edition = "2021"
 # will be ignored under cargo run command
 test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
             "-serial","stdio",
+            # hide the display window when testing
             "-display", "none",
             ]
 #add timeout limits for each test to avoid infinite loop

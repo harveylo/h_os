@@ -47,24 +47,25 @@ pub extern "C" fn _start() -> ! {
 // this attribute dedicates the function only exists in tests
 #[cfg(test)]
 // dyn keyword dedicates Trait object
-fn test_runner(tests: &[&dyn Fn()]) {
+fn test_runner(tests: &[&dyn Testable]) {
     serial_println!("Running {} tests", tests.len());
     for test in tests {
-        test();
+        test.run();
     }
 
     exit_qemu(QemuExitCode::Success);
 }
 
-// Add a test case
+// Add test cases
 #[test_case]
 fn trivial_assertion(){
-    serial_print!("A trivial assertion...    ");
     assert_eq!(0,0);
     // vga_buffer::print_set_color(vga_buffer::Color::White, vga_buffer::Color::Green);
     // vga_buffer::print_resotre_default_color();
     // println!();
 }
+
+
 
 #[derive(Debug,Clone,Copy,PartialEq,Eq)]
 #[repr(u32)]
@@ -87,12 +88,15 @@ pub trait Testable {
     fn run(&self) -> ();
 }
 
+// generic implementation
+// implemented the Testable trait for all types that has Fn() Trait
 impl<T> Testable for T
 where
     T: Fn(),
 {
     fn run(&self){
         serial_print!("{}...\t", core::any::type_name::<T>());
+        // For the self object has implemented the Fn trait, it can be called by using just ()
         self();
         serial_println!("\x1b[42m[OK]\x1b[0m");
     }
