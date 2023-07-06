@@ -1,12 +1,13 @@
 #![no_std]
 #![no_main]
 #![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
+#![test_runner(h_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 mod vga_buffer;
 mod serial;
 
 use core::panic::PanicInfo;
+use h_os::println;
 
 
 // to be called when panic happens
@@ -15,17 +16,6 @@ use core::panic::PanicInfo;
 fn panic(info: &PanicInfo) -> !{
     println!("{}", info);
     loop {}
-}
-
-// conditional compilation
-// the following function will only be compiled during tests
-#[cfg(test)]
-#[panic_handler]
-fn panic(info : &PanicInfo) ->! {
-    serial_println!("\x1b[41;5m[FAILED]\x1b[0m\n");
-    serial_println!("\x1b[1;31m ERROR:\x1b[0m {}\n",info);
-    exit_qemu(QemuExitCode::Failed);
-    loop{}
 }
 
 
@@ -44,17 +34,6 @@ pub extern "C" fn _start() -> ! {
 
 
 
-// this attribute dedicates the function only exists in tests
-#[cfg(test)]
-// dyn keyword dedicates Trait object
-fn test_runner(tests: &[&dyn Testable]) {
-    serial_println!("Running {} tests", tests.len());
-    for test in tests {
-        test.run();
-    }
-
-    exit_qemu(QemuExitCode::Success);
-}
 
 // Add test cases
 #[test_case]
@@ -67,37 +46,3 @@ fn trivial_assertion(){
 
 
 
-#[derive(Debug,Clone,Copy,PartialEq,Eq)]
-#[repr(u32)]
-pub enum QemuExitCode {
-    Success = 0x10,
-    Failed = 0x11,
-}
-
-pub fn exit_qemu(exit_code: QemuExitCode){
-    use x86_64::instructions::port::Port;
-
-    unsafe {
-        let mut port = Port::new(0xf4);
-        port.write(exit_code as u32);
-    }
-}
-
-//? Testable Trait
-pub trait Testable {
-    fn run(&self) -> ();
-}
-
-// generic implementation
-// implemented the Testable trait for all types that has Fn() Trait
-impl<T> Testable for T
-where
-    T: Fn(),
-{
-    fn run(&self){
-        serial_print!("{}...\t", core::any::type_name::<T>());
-        // For the self object has implemented the Fn trait, it can be called by using just ()
-        self();
-        serial_println!("\x1b[42m[OK]\x1b[0m");
-    }
-}
