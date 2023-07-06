@@ -14,7 +14,7 @@ lazy_static! {
 #[doc(hidden)]
 // ! Why :: before core?
 // the path started from :: resolves from crates in the extern prelude
-pub fn _print(args: ::core::fmt::Arguments) {
+pub fn _print(args: core::fmt::Arguments) {
     use core::fmt::Write;
     SERIAL1.lock().write_fmt(args).expect("Printing to serial failed");
 }
