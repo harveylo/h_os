@@ -44,3 +44,8 @@ features = ["spin_no_std"]
 [profile.release]
 panic = "abort"
 
+# test is an array
+[[test]]
+# test[0].name = "should_panic"
+name = "should_panic"
+harness =false

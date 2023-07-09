@@ -6,17 +6,24 @@
 
 use core::panic::PanicInfo;
 
-use h_os::println;
+use h_os::{println, init};
 
 #[no_mangle] // no name wrangling
 pub extern "C" fn _start() -> ! {
     println!("Hello, rust os World!");
-    println!("this is {}", 3.0/5.0);
+    init();
+    // manually invoke a breakpoint interrupt
+    unsafe{
+        *(0xdeadbeaf as *mut u8) = 12;
+    }
+    x86_64::instructions::interrupts::int3();
     // conditional compilation
     #[cfg(test)]
     test_main();
     loop {}
 }
+
+
 
 
 // to be called when panic happens
