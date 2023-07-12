@@ -12,11 +12,19 @@ use h_os::{println, init};
 pub extern "C" fn _start() -> ! {
     println!("Hello, rust os World!");
     init();
+    // unsafe{
+    //     *(0xdeadbeaf as *mut u8) = 12;
+    // }
+
     // manually invoke a breakpoint interrupt
-    unsafe{
-        *(0xdeadbeaf as *mut u8) = 12;
+    // x86_64::instructions::interrupts::int3();
+
+    // will triger triple fault if stack overflow is not handled properly
+    fn stack_overflow(){
+        stack_overflow();
     }
-    x86_64::instructions::interrupts::int3();
+    stack_overflow();
+
     // conditional compilation
     #[cfg(test)]
     test_main();

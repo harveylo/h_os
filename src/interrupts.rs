@@ -22,5 +22,6 @@ extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame){
 
 extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame, error_num: u64) -> !{
     println!("DOUBLE FAULT EXCEPTION TRIGGERED\n{:#?}\n with error_num: {}", stack_frame,error_num);
+    // panic!("DOUBLE FAULT EXCEPTION TRIGGERED\n{:#?}\n with error_num: {}", stack_frame,error_num);
     loop {}
 }
