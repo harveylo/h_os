@@ -19,11 +19,6 @@ pub extern "C" fn _start() -> ! {
     // manually invoke a breakpoint interrupt
     // x86_64::instructions::interrupts::int3();
 
-    // will triger triple fault if stack overflow is not handled properly
-    fn stack_overflow(){
-        stack_overflow();
-    }
-    stack_overflow();
 
     // conditional compilation
     #[cfg(test)]

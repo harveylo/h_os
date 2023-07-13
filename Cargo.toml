@@ -49,3 +49,8 @@ panic = "abort"
 # test[0].name = "should_panic"
 name = "should_panic"
 harness =false
+
+[[test]]
+# test[0].name = "should_panic"
+name = "stack_overflow"
+harness = false
