@@ -6,12 +6,15 @@
 
 use core::panic::PanicInfo;
 
-use h_os::{println, init};
+use h_os::{println, init, print};
 
 #[no_mangle] // no name wrangling
 pub extern "C" fn _start() -> ! {
     println!("Hello, rust os World!");
     init();
+    loop {
+        print!("-");
+    }
     // unsafe{
     //     *(0xdeadbeaf as *mut u8) = 12;
     // }

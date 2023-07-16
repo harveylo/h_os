@@ -12,8 +12,18 @@ pub mod serial;
 pub mod vga_buffer;
 pub mod interrupts;
 pub mod gdt;
+// mod pit_8254;
 
 
+pub fn init() {
+    interrupts::init_idt();
+    gdt::init();
+    unsafe{
+        interrupts::PICS.lock().initialize();
+        // pit_8254::PIT::new(1).init();
+    }
+    x86_64::instructions::interrupts::enable();
+}
 
 //? Testable Trait
 pub trait Testable {
@@ -86,9 +96,4 @@ pub fn exit_qemu(exit_code: QemuExitCode){
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
     }
-}
-
-pub fn init() {
-    interrupts::init_idt();
-    gdt::init();
 }
