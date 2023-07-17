@@ -199,7 +199,10 @@ pub fn print_set_color(fg : Color, bg: Color){
 // but this is a private implementation detail, use the following attribute to avoid documentation generation
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments){
-    WRITER.lock().write_fmt(args).unwrap();
+    // turn off the interrupts during the output to solve deadlock 
+    x86_64::instructions::interrupts::without_interrupts(
+        || {WRITER.lock().write_fmt(args).unwrap();}
+    );
 }
 
 
@@ -218,12 +221,16 @@ fn test_println_int() {
 }
 #[test_case]
 fn test_println_char_str(){
-    let s = "Hello, RUST os World!";
-    println!("{s}");
-    for (i,c) in s.chars().enumerate() {
-        // get the ith character of the line that just outputed to the screen(VGA buffer)
-        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT-2][i].read();
-        // compare those characters
-        assert_eq!(char::from(screen_char.ascii_character),c);
-    }
+    // turn off interrupts for the entire test
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        let s = "Hello, RUST os World!";
+       writeln!(writer,"\n{s}").expect("Write to VGA Buffer faild");
+        for (i,c) in s.chars().enumerate() {
+            // get the ith character of the line that just outputed to the screen(VGA buffer)
+            let screen_char = writer.buffer.chars[BUFFER_HEIGHT-2][i].read();
+            // compare those characters
+            assert_eq!(char::from(screen_char.ascii_character),c);
+        }
+    });
 }

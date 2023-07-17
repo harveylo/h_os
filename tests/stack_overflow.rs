@@ -4,7 +4,7 @@
 
 use core::panic::PanicInfo;
 
-use h_os::{serial_println, exit_qemu, gdt::{self}};
+use h_os::{serial_println, exit_qemu, gdt::{self}, hlt_loop};
 use lazy_static::lazy_static;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
@@ -20,7 +20,7 @@ pub extern "C" fn _start() -> !{
 
     serial_println!("Should not reach here..");
     exit_qemu(h_os::QemuExitCode::Failed);
-    loop {}
+    hlt_loop();
 }
 
 // will triger triple fault if stack overflow is not handled properly
@@ -52,7 +52,7 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
     serial_println!("{:#?}", stack_frame);
     serial_println!("STACK OVERFLOW test ... \x1b[42m[OK]\x1b[0m");
     exit_qemu(h_os::QemuExitCode::Success);
-    loop{}
+    hlt_loop();
 }
 
 fn init_test_idt() {

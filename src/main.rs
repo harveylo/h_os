@@ -6,15 +6,19 @@
 
 use core::panic::PanicInfo;
 
-use h_os::{println, init, print};
+use h_os::{println, init, };
 
 #[no_mangle] // no name wrangling
 pub extern "C" fn _start() -> ! {
     println!("Hello, rust os World!");
     init();
-    loop {
-        print!("-");
-    }
+
+    // If the print function does not turn off the interrupts,
+    // the following statement may trigger deadlock
+    // loop {
+    //     for _i in 1..10000 {}
+    //     print!("-");
+    // }
     // unsafe{
     //     *(0xdeadbeaf as *mut u8) = 12;
     // }
@@ -26,7 +30,7 @@ pub extern "C" fn _start() -> ! {
     // conditional compilation
     #[cfg(test)]
     test_main();
-    loop {}
+    h_os::hlt_loop();
 }
 
 

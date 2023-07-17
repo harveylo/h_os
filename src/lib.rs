@@ -58,7 +58,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
     serial_println!("\x1b[41;5m[FAILED]\x1b[0m\n");
     serial_println!("\x1b[1;31m ERROR:\x1b[0m {}\n",info);
     exit_qemu(QemuExitCode::Failed);
-    loop{}
+    hlt_loop();
 }
 
 
@@ -68,7 +68,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     init();
     test_main();
-    loop{}
+    hlt_loop();
 }
 
 #[test_case]
@@ -95,5 +95,13 @@ pub fn exit_qemu(exit_code: QemuExitCode){
     unsafe {
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
+    }
+}
+
+// Using hlt instruction can make the cpu sleep until next interrupt
+// So it's a little more eco-friedly than merely a infinite loop
+pub fn hlt_loop() -> !{
+    loop{
+        x86_64::instructions::hlt();
     }
 }
