@@ -26,6 +26,19 @@ pub extern "C" fn _start() -> ! {
     // manually invoke a breakpoint interrupt
     // x86_64::instructions::interrupts::int3();
 
+    use x86_64::registers::control::Cr3;
+    let (page_table_base, _) = Cr3::read(); 
+
+    println!("top level page table at: {:#?}", page_table_base.start_address());
+
+    let p = 0x2031b2 as *mut u8;
+    unsafe{
+        println!("Read");
+        let x = *p;
+        println!("write");
+        *(p) = 2;
+    }
+
 
     // conditional compilation
     #[cfg(test)]

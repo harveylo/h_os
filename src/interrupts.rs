@@ -1,4 +1,5 @@
 use spin::Mutex;
+use x86_64::structures::idt::PageFaultErrorCode;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 use crate::hlt_loop;
@@ -36,6 +37,7 @@ lazy_static!{
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
+        idt.page_fault.set_handler_fn(pagefault_handler);
         // unsafe because the validity is secured by caller
         unsafe{
             idt.double_fault.set_handler_fn(double_fault_handler)
@@ -97,4 +99,13 @@ extern "x86-interrupt" fn keyboard_handler (_stack_frame: InterruptStackFrame){
     unsafe{
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
     }
+}
+
+extern "x86-interrupt" fn pagefault_handler (stack_frame: InterruptStackFrame, errnum: PageFaultErrorCode) {
+    use x86_64::registers::control::Cr2;
+    println!("PAGE_FAULT_EXCEPTION OCCURED");
+    println!("Trying to access address: {:?}", Cr2::read());    
+    println!("Error number: {:#?}",errnum);
+    println!("Stack Frame: {:#?}", stack_frame);
+    hlt_loop()
 }
