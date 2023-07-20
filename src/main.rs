@@ -34,7 +34,7 @@ pub extern "C" fn _start() -> ! {
     let p = 0x2031b2 as *mut u8;
     unsafe{
         println!("Read");
-        let x = *p;
+        let _x = *p;
         println!("write");
         *(p) = 2;
     }
