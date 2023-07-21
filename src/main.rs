@@ -6,10 +6,18 @@
 
 use core::panic::PanicInfo;
 
-use h_os::{println, init, };
+use bootloader::{BootInfo, entry_point};
+use h_os::{println, init, memory, };
+use x86_64::VirtAddr;
 
-#[no_mangle] // no name wrangling
-pub extern "C" fn _start() -> ! {
+
+// kernal main function is called outside kernal
+// thus no signature checking is performed, use following macro to create an entry point
+// wuth signature checking
+entry_point!(kernel_main);
+
+// #[no_mangle] // no name wrangling
+pub  fn kernel_main(boot_into: &'static BootInfo) -> ! {
     println!("Hello, rust os World!");
     init();
 
@@ -26,17 +34,12 @@ pub extern "C" fn _start() -> ! {
     // manually invoke a breakpoint interrupt
     // x86_64::instructions::interrupts::int3();
 
-    use x86_64::registers::control::Cr3;
-    let (page_table_base, _) = Cr3::read(); 
-
-    println!("top level page table at: {:#?}", page_table_base.start_address());
-
-    let p = 0x2031b2 as *mut u8;
-    unsafe{
-        println!("Read");
-        let _x = *p;
-        println!("write");
-        *(p) = 2;
+    let offset = VirtAddr::new(boot_into.physical_memory_offset);
+    let l4_table = unsafe { memory::active_4_level_pagetable(offset) };
+    for (i, entry) in l4_table.iter().enumerate() {
+        if !entry.is_unused() {
+            println!("L4 Entry {}: {:?}", i, entry);
+        }
     }
 
 
