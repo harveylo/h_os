@@ -7,7 +7,7 @@
 use core::panic::PanicInfo;
 
 use bootloader::{BootInfo, entry_point};
-use h_os::{println, init, memory, };
+use h_os::{println, init, memory::translate_addr_v2p, };
 use x86_64::VirtAddr;
 
 
@@ -35,13 +35,38 @@ pub  fn kernel_main(boot_into: &'static BootInfo) -> ! {
     // x86_64::instructions::interrupts::int3();
 
     let offset = VirtAddr::new(boot_into.physical_memory_offset);
-    let l4_table = unsafe { memory::active_4_level_pagetable(offset) };
-    for (i, entry) in l4_table.iter().enumerate() {
-        if !entry.is_unused() {
-            println!("L4 Entry {}: {:?}", i, entry);
-        }
-    }
+    // let l4_table = unsafe { memory::active_4_level_pagetable(offset) };
+    // for (i, entry) in l4_table.iter().enumerate() {
+    //     if !entry.is_unused() {
+    //         println!("L4 Entry {}: {:?}", i, entry);
+    //         let l3phy = entry.addr();
+    //         let l3vir = offset + l3phy.as_u64();
+    //         let l3tptr = l3vir.as_mut_ptr() as *mut PageTable;
+    //         let l3table = unsafe {&mut *l3tptr};
+    //         for (j, l3entry) in l3table.iter().enumerate(){
+    //             if !l3entry.is_unused(){
+    //                 println!("L3 Entry {} from L4 entry {}: {:?}",j,i,l3entry);
+    //             }
+    //         }
+    //     }
+    // }
+    
+    let addreses = [
+        // VGA identity mapping
+        0xb8000,
+        // some code page
+        0x201008,
+        // some stack page
+        0x0100_0020_1a10,
+        // virtual address mapped to physical address 0
+        boot_into.physical_memory_offset,
+    ];
 
+    for address in addreses {
+        let vir_addr = VirtAddr::new(address);
+        let phy_addr = unsafe{translate_addr_v2p(vir_addr, offset)};
+        println!("{:?} -> {:?}", vir_addr, phy_addr);
+    }
 
     // conditional compilation
     #[cfg(test)]
