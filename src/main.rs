@@ -7,8 +7,8 @@
 use core::panic::PanicInfo;
 
 use bootloader::{BootInfo, entry_point};
-use h_os::{println, init, memory::translate_addr_v2p, };
-use x86_64::VirtAddr;
+use h_os::{println, init, memory::{self}, };
+use x86_64::{VirtAddr, structures::paging::Page};
 
 
 // kernal main function is called outside kernal
@@ -50,23 +50,33 @@ pub  fn kernel_main(boot_into: &'static BootInfo) -> ! {
     //         }
     //     }
     // }
+    let mut mapper = unsafe{memory::init(offset)};
     
-    let addreses = [
-        // VGA identity mapping
-        0xb8000,
-        // some code page
-        0x201008,
-        // some stack page
-        0x0100_0020_1a10,
-        // virtual address mapped to physical address 0
-        boot_into.physical_memory_offset,
-    ];
+    // let addreses = [
+    //     // VGA identity mapping
+    //     0xb8000,
+    //     // some code page
+    //     0x201008,
+    //     // some stack page
+    //     0x0100_0020_1a10,
+    //     // virtual address mapped to physical address 0
+    //     boot_into.physical_memory_offset,
+    // ];
 
-    for address in addreses {
-        let vir_addr = VirtAddr::new(address);
-        let phy_addr = unsafe{translate_addr_v2p(vir_addr, offset)};
-        println!("{:?} -> {:?}", vir_addr, phy_addr);
-    }
+    // for address in addreses {
+    //     let vir_addr = VirtAddr::new(address);
+    //     let phy_addr = mapper.translate_addr(vir_addr);
+    //     println!("{:?} -> {:?}", vir_addr, phy_addr);
+    // }
+
+    let mut frame_allocator = memory::EmptyFrameAllocator;
+
+    let page = Page::containing_address(VirtAddr::new(0));
+    
+    memory::create_mapping_to_vga(page, &mut mapper, &mut frame_allocator);
+
+    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
+    unsafe{ page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e)};
 
     // conditional compilation
     #[cfg(test)]
