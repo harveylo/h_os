@@ -1,4 +1,5 @@
 
+use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
 use x86_64::{
     structures::paging::{PageTable, page_table::FrameError, OffsetPageTable, Page, FrameAllocator, Size4KiB, PhysFrame, Mapper, },
     VirtAddr, PhysAddr,
@@ -33,6 +34,72 @@ unsafe fn active_4_level_pagetable(offset: VirtAddr)
 
     &mut *table_ptr
 }
+
+
+pub fn create_mapping_to_vga(
+    page: Page, 
+    mapper: &mut OffsetPageTable, 
+    frame_allocator: & mut impl FrameAllocator<Size4KiB>)
+{
+    use x86_64::structures::paging::PageTableFlags as Flags;
+    let frame: PhysFrame = PhysFrame::containing_address(PhysAddr::new(0xb8000));
+    let flag = Flags::PRESENT | Flags::WRITABLE;
+
+    let map_to_result = unsafe {
+        mapper.map_to(page, frame, flag, frame_allocator)
+    };
+    map_to_result.expect("map_to failed").flush();
+}
+
+
+/// FrameAllocator that returns usable frames from the bootloader's memory map
+pub struct BootInfoFrameAllocator {
+    memory_map: &'static MemoryMap,
+    next: usize,
+}
+
+impl BootInfoFrameAllocator {
+    /// Returns an iterator over the usable frames specified in the memory map.
+    fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {
+        //get all regions frrom the memory map
+        let regions = self.memory_map.iter();
+        let usable_regions = regions
+            .filter(|r| r.region_type == MemoryRegionType::Usable);
+        
+        // map each region to its address range
+        let addr_ranges = usable_regions
+            .map(|r| r.range.start_addr()..r.range.end_addr());
+        
+        //transform to an iterator of frame start addresses
+        let fram_addresses = addr_ranges
+            .flat_map(|r| r.step_by(4096));
+        
+        // create PhysFrame types from the start addresses
+        fram_addresses.map(|addr| PhysFrame::containing_address(PhysAddr::new(addr)))
+    }
+
+    /// Create a FrameAllocator from the passed memory map.
+    ///
+    /// This function is unsafe because the caller must guarantee that the passed
+    /// memory map is valid. The main requirement is that all frames that are marked
+    /// as `USABLE` in it are really unused.
+    pub unsafe fn init(memory_map: &'static MemoryMap) -> Self {
+        BootInfoFrameAllocator { memory_map: (memory_map), next: (0) }
+    }
+}
+
+unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
+    fn allocate_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
+        let frame = self.usable_frames().nth(self.next);
+        self.next += 1;
+        frame
+    }
+}
+
+
+
+
+// deprecated structures and functions
 
 /// Translates the given virtual address to the mapped physical address, or
 /// `None` if the address is not mapped.
@@ -78,22 +145,9 @@ fn translate_addr_inner_v2p(virt_addr : VirtAddr, memory_offset: VirtAddr) -> Op
     Some(cur_frame.start_address() + u64::from(virt_addr.page_offset()))
 }
 
-pub fn create_mapping_to_vga(
-    page: Page, 
-    mapper: &mut OffsetPageTable, 
-    frame_allocator: & mut impl FrameAllocator<Size4KiB>)
-{
-    use x86_64::structures::paging::PageTableFlags as Flags;
-    let frame: PhysFrame = PhysFrame::containing_address(PhysAddr::new(0xb8000));
-    let flag = Flags::PRESENT | Flags::WRITABLE;
-
-    let map_to_result = unsafe {
-        mapper.map_to(page, frame, flag, frame_allocator)
-    };
-    map_to_result.expect("map_to failed").flush();
-}
-
+#[deprecated]
 pub struct EmptyFrameAllocator;
+#[allow(deprecated)]
 unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
         None
