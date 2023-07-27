@@ -10,8 +10,8 @@ use core::panic::PanicInfo;
 
 use alloc::boxed::Box;
 use bootloader::{BootInfo, entry_point,};
-use h_os::{println, init, memory::{self}, };
-use x86_64::{VirtAddr, structures::paging::Page};
+use h_os::{println, init, memory::{self, BootInfoFrameAllocator}, allocator, };
+use x86_64::VirtAddr;
 
 
 // kernal main function is called outside kernal
@@ -26,19 +26,16 @@ pub  fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     let offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe{memory::init(offset)};
+    let mut frame_allocator = unsafe {
+        BootInfoFrameAllocator::init(&boot_info.memory_map)
+    };
 
-    let mut frame_allocator = unsafe { memory::BootInfoFrameAllocator::init(&boot_info.memory_map) };
+    allocator::init_heap(&mut mapper, &mut frame_allocator)
+        .expect("Heap initialization failed");
 
-    let page = Page::containing_address(VirtAddr::new(0xdeadbeaf000));
-    
-    memory::create_mapping_to_vga(page, &mut mapper, &mut frame_allocator);
+    let _x  = Box::new([1,2,3]);
 
-    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
-    unsafe{ page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e)};
-
-    let b = Box::new([1,2,3]);
-
-    println!("{:?}",b);
+    println!("Here it is");
 
     // conditional compilation
     #[cfg(test)]
