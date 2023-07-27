@@ -6,6 +6,12 @@
 #![reexport_test_harness_main = "test_main"]
 #![feature(abi_x86_interrupt)]
 
+// `alloc` crate ships with Rust compiler as part of std library
+// so no need to add this dependency in Cargo.toml
+// add extern crate statement, specifying that the compiler should try to include it
+// should add alloc to build-std lsit too
+extern crate alloc;
+
 use core::panic::PanicInfo;
 
 #[cfg(test)]
@@ -16,6 +22,7 @@ pub mod vga_buffer;
 pub mod interrupts;
 pub mod gdt;
 pub mod memory;
+pub mod allocator;
 // mod pit_8254;
 
 
