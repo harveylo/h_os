@@ -3,7 +3,7 @@
 [unstable]
 # tell cargo to recompile core and compiler_builtins
 # compiler_builtins is the necessary dependence of core
-build-std = ["core", "compiler_builtins"]
+build-std = ["core", "compiler_builtins", "alloc"]
 # The standard C library is disabled, all c-std function includes memory-related functions can not be used
 # Writing correctly implemented library functions can be hard
 # rust has contained implementations of those c-std functions, but they are disabled by default to not dollide with the standard C library
