@@ -1,5 +1,4 @@
-use core::{alloc::GlobalAlloc, ptr::null_mut};
-
+use linked_list_allocator::LockedHeap;
 use x86_64::{structures::paging::{Mapper, Size4KiB, FrameAllocator, mapper::MapToError, Page, PageTableFlags}, VirtAddr};
 
 
@@ -23,21 +22,25 @@ pub fn init_heap(
             .ok_or(MapToError::FrameAllocationFailed)?;
 
         let flags = PageTableFlags::WRITABLE | PageTableFlags::PRESENT;
+
+        // map_to function needs a frame_allocator to allocate physical memory
+        // for createing page tables if necessary
         unsafe {mapper.map_to(page, frame, flags, frame_allocator)?.flush();}
+    }
+
+    // initialize the allocator
+    // initialization must happen after mapping all heap pages
+    // A allocator must log all those memory the has been allocated to
+    // get a valid memory region and deallocate them correctly
+    unsafe{
+        ALLOCATOR.lock().init(HEAP_START as *mut u8, HEAP_SIZE);
     }
     Ok(())
 }
 
-pub struct Dummy;
-
-unsafe impl GlobalAlloc for Dummy {
-    unsafe fn alloc(&self, _layout: core::alloc::Layout) -> *mut u8 {
-        null_mut()
-    }
-    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: core::alloc::Layout) {
-        panic!("dealloc is not implemented yet")
-    }
-}
-
+// A allocator is used to allocate memory(Both virtual memory and physical memory) for 
+// objects during runtime
 #[global_allocator]
-static ALLOCATOR: Dummy = Dummy;
+// must initialize allocator after this call
+// empty() does not initialize the allocator with any necessary information
+static ALLOCATOR: LockedHeap = LockedHeap::empty();

@@ -36,22 +36,9 @@ unsafe fn active_4_level_pagetable(offset: VirtAddr)
 }
 
 
-pub fn create_mapping_to_vga(
-    page: Page, 
-    mapper: &mut OffsetPageTable, 
-    frame_allocator: & mut impl FrameAllocator<Size4KiB>)
-{
-    use x86_64::structures::paging::PageTableFlags as Flags;
-    let frame: PhysFrame = PhysFrame::containing_address(PhysAddr::new(0xb8000));
-    let flag = Flags::PRESENT | Flags::WRITABLE;
-
-    let map_to_result = unsafe {
-        mapper.map_to(page, frame, flag, frame_allocator)
-    };
-    map_to_result.expect("map_to failed").flush();
-}
 
 
+/// Allocate Physical Memory
 /// FrameAllocator that returns usable frames from the bootloader's memory map
 pub struct BootInfoFrameAllocator {
     memory_map: &'static MemoryMap,
@@ -152,4 +139,20 @@ unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
         None
     }
+}
+
+#[deprecated]
+pub fn create_mapping_to_vga(
+    page: Page, 
+    mapper: &mut OffsetPageTable, 
+    frame_allocator: & mut impl FrameAllocator<Size4KiB>)
+{
+    use x86_64::structures::paging::PageTableFlags as Flags;
+    let frame: PhysFrame = PhysFrame::containing_address(PhysAddr::new(0xb8000));
+    let flag = Flags::PRESENT | Flags::WRITABLE;
+
+    let map_to_result = unsafe {
+        mapper.map_to(page, frame, flag, frame_allocator)
+    };
+    map_to_result.expect("map_to failed").flush();
 }

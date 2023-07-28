@@ -8,7 +8,7 @@ extern crate alloc;
 
 use core::panic::PanicInfo;
 
-use alloc::boxed::Box;
+use alloc::{boxed::Box, rc::Rc,vec, vec::Vec};
 use bootloader::{BootInfo, entry_point,};
 use h_os::{println, init, memory::{self, BootInfoFrameAllocator}, allocator, };
 use x86_64::VirtAddr;
@@ -33,9 +33,25 @@ pub  fn kernel_main(boot_info: &'static BootInfo) -> ! {
     allocator::init_heap(&mut mapper, &mut frame_allocator)
         .expect("Heap initialization failed");
 
-    let _x  = Box::new([1,2,3]);
+    let b_list  = Box::new([1,2,3]);
 
-    println!("Here it is");
+    println!("the address of b_list: {:p}\nvalue of b_list[0]={}",b_list,b_list[0]);
+
+    let mut v = Vec::new();
+    for i in 0..500 {
+        v.push(i);
+    }
+    println!("The address of v is {:p}",v.as_slice());
+
+    // Create a reference counted vector
+    let reference_counted = Rc::new(vec![1,2,3]);
+    let cloned_reference = reference_counted.clone();
+    println!("current reference count: {}", Rc::strong_count(&cloned_reference));
+    core::mem::drop(reference_counted);
+    println!("current reference count: {}", Rc::strong_count(&cloned_reference));
+
+
+    println!("Hello, rust os world again!");
 
     // conditional compilation
     #[cfg(test)]
